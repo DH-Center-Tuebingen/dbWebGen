@@ -338,8 +338,10 @@
 					    This will produce the exact same result as the placeholder string above:
 					  	  'display' => ['{lastname}, {firstname}', ' ({birthdate})']
 					    In fact, placeholder strings are translated into a column/expression hash array
-				- sort: boolean (optional) (default: true)
+				- sort: boolean|string (optional) (default: true)
 					In case of multiple lookup values, this setting determines whether the linked records are sorted using the display expression. Only relevant for CARDINALITY_MULTIPLE.
+					* If omitted or set to true, values are sorted using PHP's asort() function
+					* If set to 'natsort', values are sorted using PHP's natsort() function, which sorts alphanumeric strings in a way that is more natural to humans, e.g. "Option 2" will be sorted before "Option 10"
 				- dropdown_sort: string|array (optional) (default: asc)
 					If a string is provided then 'desc' will sort the dropdown box in descending order, everything else will sort ascending (i.e. the default).
 					If an array is provided, it needs to map fields to sort order, e.g.

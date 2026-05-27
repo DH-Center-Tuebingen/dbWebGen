@@ -1012,7 +1012,7 @@ function prepare_field_display_val($table_name, &$table, &$record, &$field, $col
 			*/
 			//<< postgre 9.4+
 
-			// postgre 9.2
+			// postgre 9.2			
 			$temp_arr = json_decode($val);
 			$id_display_map = array();
 			if(is_array($temp_arr)) {
@@ -1025,8 +1025,10 @@ function prepare_field_display_val($table_name, &$table, &$record, &$field, $col
 				$val = '';
 			}
 			else {
-				if(!isset($field['lookup']['sort']) || $field['lookup']['sort'] == true)
+				if(!isset($field['lookup']['sort']) || $field['lookup']['sort'] === true)
 					asort($id_display_map);
+				else if(isset($field['lookup']['sort']) && $field['lookup']['sort'] === 'natsort')
+					natsort($id_display_map);
 
 				$linked_records = array();
 				foreach($id_display_map as $id_val => $display_val) {
