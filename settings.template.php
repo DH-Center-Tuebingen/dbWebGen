@@ -616,15 +616,18 @@
 			Used for default sorting of tables in MODE_LIST. Associative array with key := fieldname (or SQL expression) and value := {'asc', 'desc'}
 			e.g. [ 'lastname' => 'asc, 'firstname' => 'asc' ]
 		- hooks: array (optional)
-			Functions to call before/after certain events. Associative array with key reflecting the event, and value reflecting the function to call.
+			Functions to call before/after certain events. Associative array with key reflecting the event, and value reflecting the function to call. All *_db and *_ex hooks receive arguments based on actual records in the DB (watch performance overhead), while the others receive arguments based on form data. Delete hooks are not invoked for any cascading deletes or changes that the DB might perform.
 			Possible keys:
-			- after_insert: string (optional), after_update: string (optional), after_delete: string (optional)
-				Function to call after insertion/update/deletion of a record.
-				Arguments: (1) table name (2) table settings and (3) primary key/value array.
-				For hook after_delete_ex, an additional associative array with the deleted record is provided as argument
-			- before_insert: string (optional), before_update: string (optional), before_delete: string (optional)
-				Function to call before insertion/update/deletion of a record. Be careful with before_delete hook since the acutal deletion might fail
-				Arguments: (1) table name (2) table settings (3) column names array reference, (4) column values array reference
+			- after_insert (receives table_name, table_settings, pk_values)
+			- after_insert_db (receives table_name, record)
+			- after_update (receives table_name, table_settings, pk_values)
+			- after_update_db (receives table_name, record, record_before)
+			- after_delete (receives table_name, table_settings, pk_values)
+			- after_delete_ex (receives table_name, table_settings, pk_values, deleted_record)				
+			- after_delete_db (receives table_name, table_settings, record)
+			- before_insert (receives table_name, table_settings, column_names, column_values)
+			- before_update (receives table_name, table_settings, column_names, column_values)
+			- before_delete (receives table_name, table_settings, column_names, column_values)				
 		- additional_steps: array (optional)
 			Steps offered to be performed after a new record was created to link this record with others via separate linkage tables. The key reflects the linked table, the value is an array with these values:
 				- label: string

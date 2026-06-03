@@ -38,16 +38,6 @@
 		if($db === false)
 			return proc_error(l10n('error.db-connect'));
 
-		/* for after_delete_ex, we want to deliver the deleted row, so fetch: */
-		$cur_record = [];
-		if(isset($table['hooks']) && isset($table['hooks']['after_delete_ex'])) {
-			if(!db_get_single_row(sprintf('select * from %s where %s', db_esc($table_name), $where), $values, $cur_record, $db)
-				|| !is_array($cur_record)
-			) {
-				$cur_record = [];
-			}
-		}
-
 		$stmt = $db->prepare($sql);
 		if($stmt === false)
 			return proc_error(l10n('error.db-prepare'), $db);
@@ -71,6 +61,16 @@
 		if(isset($table['hooks']) && isset($table['hooks']['before_delete']) && trim($table['hooks']['before_delete']) != '')
 			$table['hooks']['before_delete']($table_name, $table, $pk_hash);
 
+		/* for after_delete_ex, we want to deliver the deleted row, so fetch: */
+		$cur_record = [];
+		if(isset($table['hooks']['after_delete_ex']) || isset($table['hooks']['after_delete_db'])) {
+			if(!db_get_single_row(sprintf('select * from %s where %s', db_esc($table_name), $where), $values, $cur_record, $db)
+				|| !is_array($cur_record)
+			) {
+				$cur_record = [];
+			}
+		}
+
 		if($stmt->execute($values) === false)
 			return proc_error(l10n('error.delete-exec'), $stmt);
 
@@ -78,11 +78,15 @@
 			return proc_error(l10n('error.delete-count'), $stmt);
 
 		// call after_delete hook, if any
+		// !!! NOTE: cascading deletes cannot be handled here for delete hooks, because we simply don't 
+		// know the cascade of deletes that might be triggered by the DB!!!
 		if(isset($table['hooks'])) {
 			if(isset($table['hooks']['after_delete']))
 				$table['hooks']['after_delete']($table_name, $table, $pk_hash);
 			if(isset($table['hooks']['after_delete_ex']))
 				$table['hooks']['after_delete_ex']($table_name, $table, $pk_hash, $cur_record);
+			if(isset($table['hooks']['after_delete_db']))
+				$table['hooks']['after_delete_db']($table_name, $cur_record);
 		}
 
 		$warn = '';

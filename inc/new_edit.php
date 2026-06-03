@@ -644,7 +644,8 @@ JS;
 		$many2many_field_assocs = array();
 		$values = array();
 		$arr_inline_details = array();
-
+		$record_before = null;
+		
 		$db = db_connect();
 		if($db === false)
 			return proc_error(l10n('error.db-connect'));
@@ -835,6 +836,9 @@ JS;
 			}
 
 			$sql = get_sql_update($table_name, $table, $columns, $values, $edit_ids);
+			if(isset($table['hooks']['after_update_db'])) {
+				$record_before = get_table_row_from_db($table_name, $edit_ids);
+			}
 		}
 
 		// FIRST INSERT OR UPDATE THE RECORD
@@ -845,6 +849,7 @@ JS;
 			return proc_error(l10n('error.db-execute'), $stmt);
 
 		$form_id = get_form_id();
+		$record_after = null;
 
 		// THEN HANDLE THE MANY-TO-MANY-ASSOCIATIONS (only if not in m:n table, since composite FKs do not work yet)
 		$primary_keys = array();
@@ -861,10 +866,20 @@ JS;
 				foreach($table['primary_key']['columns'] as $pk)
 					$primary_keys[$pk] = $_POST[$pk];
 			}
+			
+			if(isset($table['hooks']['after_insert_db'])) {
+				$record_after = get_table_row_from_db($table_name, $primary_keys);
+				$table['hooks']['after_insert_db']($table_name, $record_after);
+			}
 		}
-		else {
+		else { // MODE_EDIT
 			foreach($table['primary_key']['columns'] as $pk)
 				$primary_keys[$pk] = $_GET[$pk];
+
+			if(isset($table['hooks']['after_update_db'])) {
+				$record_after = get_table_row_from_db($table_name, $primary_keys);
+				$table['hooks']['after_update_db']($table_name, $record_before, $record_after);
+			}
 
 			// REMOVE ALL N:N ASSIGNMENTS THAT ARE NOT NEEDED ANY MORE
 			foreach($many2many_field_assocs as $field_name => $values) {
@@ -911,7 +926,11 @@ JS;
 					$after_delete_hook = $linkage_table['hooks']['after_delete'];
 				}
 
-				$has_delete_hooks = ($before_delete_hook !== null || $after_delete_hook !== null);
+				$after_delete_hook_db = isset($linkage_table['hooks']['after_delete_db']) 
+					? $linkage_table['hooks']['after_delete_db'] 
+					: null;
+
+				$has_delete_hooks = $before_delete_hook || $after_delete_hook || $after_delete_hook_db;
 				$to_be_deleted = array();
 
 				if($has_delete_hooks) {
@@ -935,6 +954,13 @@ JS;
 					}
 				} // << BEFORE_DELETE hooks
 
+				$deleted_assoc_records = [];
+				if ($after_delete_hook_db) {
+					foreach($to_be_deleted as $pk_hash) {
+						$deleted_assoc_records[] = get_table_row_from_db($linkage_table_name, $pk_hash);						
+					}
+				}
+
 				// ACTUAL DELETION >>
 				$delete_stmt = $db->prepare('DELETE ' . $from_where);
 				if($delete_stmt === false)
@@ -947,6 +973,11 @@ JS;
 				if($after_delete_hook !== null) {
 					foreach($to_be_deleted as $pk_hash) {
 						$after_delete_hook ($table['fields'][$field_name]['linkage']['table'], $linkage_table, $pk_hash);
+					}
+				}
+				if($after_delete_hook_db) {
+					foreach($deleted_assoc_records as $deleted_assoc_record) {
+						$after_delete_hook_db ($table['fields'][$field_name]['linkage']['table'], $deleted_assoc_record);
 					}
 				}
 				// << AFTER_DELETE hook
@@ -986,12 +1017,25 @@ JS;
 								$inline_details['columns'], $inline_params, $pk_values);
 
 							#debug_log($sql_update, $inline_params);
-							// prep & exec
+							// prep & exec							
+
+							// after_delete__db hook - fetch current record
+							$assoc_record_before = null;
+							if(isset($TABLES[$linkage_info['table']]['hooks']['after_update_db'])) {
+								$assoc_record_before = get_table_row_from_db($linkage_info['table'], $pk_values);
+							}
+
 							$details_upd = $db->prepare($sql_update);
 							if($details_upd === false)
 								proc_info(l10n('info.new-edit-update-rels-prep-problems', $values[$i], $table['fields'][$field_name]['label']), $db);
 							else if($details_upd->execute($inline_params) === false)
 								proc_info(l10n('info.new-edit-update-rels-exec-problems', $values[$i], $table['fields'][$field_name]['label']), $details_upd);
+
+							// call after_delete_db hook
+							if(isset($TABLES[$linkage_info['table']]['hooks']['after_update_db'])) {
+								$assoc_record_after = get_table_row_from_db($linkage_info['table'], $pk_values);
+								$TABLES[$linkage_info['table']]['hooks']['after_update_db']($linkage_info['table'], $assoc_record_after, $assoc_record_before);
+							}
 						}
 
 						// already exists, needs to be removed from values
@@ -1051,9 +1095,14 @@ JS;
 				$inline_details = get_inline_linkage_details($form_id, $field, $value,
 					array($field_info['linkage']['fk_self'] => $ins_values[POS_FK_SELF]));
 
+				$inserted_pk_values = [
+					$field_info['linkage']['fk_self'] => $ins_values[POS_FK_SELF],
+					$field_info['linkage']['fk_other'] => null
+				];
 				if($inline_details === false) {
 					// no details available, continue with default values
 					$default_params[POS_FK_OTHER] = $value;
+					$inserted_pk_values[$field_info['linkage']['fk_other']] = $value;
 
 					#debug_log("Default linkage: $default_sql", $default_params);
 					if($default_stmt->execute($default_params) === false)
@@ -1062,6 +1111,7 @@ JS;
 				else {
 					// we do have additional info, so we need to prepare and exec a different SQL statement
 					$ins_values[POS_FK_OTHER] = $value;
+					$inserted_pk_values[$field_info['linkage']['fk_other']] = $value;
 
 					$sql_insert = get_sql_insert($field_info['linkage']['table'], $TABLES[$field_info['linkage']['table']],
 						$inline_details['columns']);
@@ -1074,6 +1124,10 @@ JS;
 						proc_info(l10n('info.new-edit-update-rels-inline-prep', $table['fields'][$field]['label'], $value), $db);
 					else if($details_stmt->execute($inline_details['params']) === false)
 						proc_info(l10n('info.new-edit-update-rels-inline-exec', $table['fields'][$field]['label'], $value), $details_stmt);
+				}
+				if(isset($TABLES[$field_info['linkage']['table']]['hooks']['after_insert_db'])) {
+					$inserted_record = get_table_row_from_db($field_info['linkage']['table'], $inserted_pk_values);
+					$TABLES[$field_info['linkage']['table']]['hooks']['after_insert_db']($field_info['linkage']['table'], $inserted_record);
 				}
 			}
 		}

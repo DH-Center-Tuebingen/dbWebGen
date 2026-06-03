@@ -2303,3 +2303,25 @@ function render_thumbnail(
 
 	return $html;
 }
+
+//------------------------------------------------------------------------------------------
+function get_table_row_from_db(
+	$table_name, 
+	$pk_values,
+	$remove_nulls = false
+) {
+//------------------------------------------------------------------------------------------
+	$sql = sprintf('select * from %s where true', db_esc($table_name));
+	foreach($pk_values as $pk_col => $pk_val) {
+		$sql .= sprintf(' and %s = :%s', db_esc($pk_col), $pk_col);
+	}
+	if(db_get_single_row($sql, $pk_values, $record) === false) {
+		return false;
+	}
+	if($remove_nulls) {
+		$record = array_filter($record, function($value) {
+			return $value !== null;
+		});
+	}
+	return $record;
+}
