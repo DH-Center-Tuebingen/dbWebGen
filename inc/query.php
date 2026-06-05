@@ -767,7 +767,7 @@ JS;
 						if($stmt->execute($all_params) === false)
 							return proc_error(l10n('error.db-execute'), $stmt);
 					} catch (Exception $e) {
-						return proc_error(l10n('error.exception', $e->getMessage()));
+						return proc_error(l10n('error.exception', render_query_exception($e->getMessage())));
 					}
 				}
 

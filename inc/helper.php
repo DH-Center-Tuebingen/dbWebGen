@@ -2325,3 +2325,13 @@ function get_table_row_from_db(
 	}
 	return $record;
 }
+
+//------------------------------------------------------------------------------------------
+function render_query_exception($msg) {
+//------------------------------------------------------------------------------------------
+	// make leading spaces non breaking in msg
+	$msg = nl2br(preg_replace_callback('/^ +/m', function($m) {
+		return str_repeat('&nbsp;', strlen($m[0]));
+	}, html($msg)));	
+	return '<div class="query-error">' . $msg . '</div>';
+}
