@@ -760,11 +760,15 @@ JS;
 					);
 				}
 				else {
-					$stmt = $this->db->prepare($this->query_info['sql']);
-					if($stmt === false)
-						return proc_error(l10n('error.db-prepare'), $this->db);
-					if($stmt->execute($all_params) === false)
-						return proc_error(l10n('error.db-execute'), $stmt);
+					try {
+						$stmt = $this->db->prepare($this->query_info['sql']);
+						if($stmt === false)
+							return proc_error(l10n('error.db-prepare'), $this->db);
+						if($stmt->execute($all_params) === false)
+							return proc_error(l10n('error.db-execute'), $stmt);
+					} catch (Exception $e) {
+						return proc_error(l10n('error.exception', $e->getMessage()));
+					}
 				}
 
 				$js = $this->chart->get_js($stmt);
