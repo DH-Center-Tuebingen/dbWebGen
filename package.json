@@ -20,7 +20,7 @@
     "select2-bootstrap-theme": "*",
     "terraformer": "1.0.6",
     "terraformer-wkt-parser": "1.1.1",
-    "transliteration": "1.6.2",
+    "transliteration": "2.6.1",
     "trumbowyg": "^2.23.0",
     "vis": "4.16.1",
     "vis-graph3d": "^5.9.8"
