@@ -191,11 +191,8 @@
 		// returns js code to fill the chart div
 		public function get_js($query_result) {
 		//--------------------------------------------------------------------------------------
-			$table_cols = '';
 			$columns = $this->get_columns($query_result);
-			foreach($columns as $col_obj)
-				$table_cols .= 'data_table.addColumn(' . json_encode($col_obj) . ");\n";
-
+			$table_cols = json_encode($columns);
 			$data_array = '';
 			$row_nr = 0;
 			while($row = $query_result->fetch(PDO::FETCH_NUM)) {
@@ -243,7 +240,11 @@ JS;
 				function draw_chart() {
 					console.log('draw_chart');
 					var data_table = new google.visualization.DataTable();
-					{$table_cols}
+					let table_cols = {$table_cols};					
+					if(typeof dbwebgen_chart_columns_preproc === "function")
+						dbwebgen_chart_columns_preproc(table_cols);
+					for(const c of table_cols)
+						data_table.addColumn(c);
 					data_table.addRows(data_array);
 					{$num_column_formatting}
 					{$datatable_postproc}
