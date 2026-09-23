@@ -79,10 +79,11 @@
 		echo_javascript(ENGINE_PATH_HTTP . 'node_modules/jquery/dist/jquery.min.js');
 		echo_javascript(ENGINE_PATH_HTTP . 'node_modules/bootstrap/dist/js/bootstrap.min.js');
 		echo_javascript(ENGINE_PATH_HTTP . 'node_modules/select2/dist/js/select2.full.min.js');
-		echo_javascript(ENGINE_PATH_HTTP . 'node_modules/transliteration/lib/browser/transliteration.min.js');
+		echo_javascript(ENGINE_PATH_HTTP . 'node_modules/transliteration/dist/browser/bundle.umd.min.js');
 		echo_javascript(ENGINE_PATH_HTTP . 'node_modules/bootstrap-toggle/js/bootstrap-toggle.min.js');
 		echo_javascript(ENGINE_PATH_HTTP . 'node_modules/trumbowyg/dist/trumbowyg.min.js');
 		echo_javascript(ENGINE_PATH_HTTP . 'node_modules/@fancyapps/ui/dist/fancybox/fancybox.umd.js');
+		echo_javascript(ENGINE_PATH_HTTP . 'node_modules/@universityofwarwick/jqdoublescroll/jquery.doubleScroll.js');
 		if($_SESSION['language'] !== 'en')
 			echo_javascript(sprintf('%snode_modules/trumbowyg/dist/langs/%s.min.js', ENGINE_PATH_HTTP, $_SESSION['language']));
 		echo_javascript(ENGINE_PATH_HTTP . 'inc/dbweb.js', true);

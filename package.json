@@ -23,6 +23,7 @@
     "transliteration": "2.6.1",
     "trumbowyg": "^2.23.0",
     "vis": "4.16.1",
-    "vis-graph3d": "^5.9.8"
+    "vis-graph3d": "^5.9.8",
+    "@universityofwarwick/jqdoublescroll": "0.7.0"
   }
 }

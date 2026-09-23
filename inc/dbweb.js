@@ -57,7 +57,8 @@ $(window).load(function() {
     set_map_picker_handler();
     prepare_navigate_away_warning();
     init_remaining_chars_display();
-    init_fancybox();    
+    init_fancybox();
+    set_bootstrap_table_doublescroll();
 });
 
 //------------------------------------------------------------------------------------------
@@ -820,4 +821,12 @@ function init_fancybox() {
             },
         },
     });
+}
+
+//------------------------------------------------------------------------------------------
+function set_bootstrap_table_doublescroll() {
+//------------------------------------------------------------------------------------------
+    $('.table-responsive').doubleScroll({
+        resetOnWindowResize: true
+    });    
 }
