@@ -284,7 +284,7 @@ $.wait = function(ms) {
 function insert_linked_item_sorted(new_item) {
 //------------------------------------------------------------------------------------------
     new_item.addClass('transition just-added');
-    new_label = transl(new_item.find('.display-label').first().text());
+    new_label = transliteration.transliterate(new_item.find('.display-label').first().text());
 
     var swaps = 0;
     var next_item = new_item;
@@ -293,7 +293,7 @@ function insert_linked_item_sorted(new_item) {
         if(next_item.length == 0)
             break;
         next_item = next_item.first();
-        next_label = transl(next_item.find('.display-label').first().text());
+        next_label = transliteration.transliterate(next_item.find('.display-label').first().text());
         if(new_label.localeCompare(next_label) <= 0)
             break;
         swaps++;
